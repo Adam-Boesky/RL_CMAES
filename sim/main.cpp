@@ -5,6 +5,32 @@
 #include <cmath>
 
 
+// From https://cplusplus.com/forum/general/216928/
+double interp1d( std::vector<double> &xData, std::vector<double> &yData, double x)
+{
+    int size = xData.size();
+
+    int i = 0;                                                                  // find left end of interval for interpolation
+    if ( x >= xData[size - 2] )                                                 // special case: beyond right end
+    {
+        i = size - 2;
+    }
+    else
+    {
+        while ( x > xData[i+1] ) i++;
+    }
+    double xL = xData[i], yL = yData[i], xR = xData[i+1], yR = yData[i+1];      // points on either side (unless beyond ends)
+
+    // Not allowing extrapolation
+    if ( x < xL ) yR = yL;
+    if ( x > xR ) yL = yR;
+
+    double dydx = ( yR - yL ) / ( xR - xL );                                    // gradient
+
+    return yL + dydx * ( x - xL );                                              // linear interpolation
+}
+
+
 std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFileName) {
     
     // Read in trajectory file
@@ -31,6 +57,46 @@ std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFil
 
     return trajectory;
 }
+
+
+class Trajectory {
+public:
+    Trajectory(const std::string& trajectoryFileName) {
+        // Read in the trajectory filename
+        trajectory = loadTrajectory(trajectoryFileName);
+
+        // Get the t, x, and y values
+        for (int i=0; i < trajectory.size(); i++) {
+            t.push_back(trajectory[i][0]);
+            x.push_back(trajectory[i][1]);
+            y.push_back(trajectory[i][2]);
+        }
+
+        // Get the velocity at each point along the trajectory
+        double dt;
+        for (int i=0; i < trajectory.size() - 1; i++) {
+            dt = t[i+1] - t[i];
+            x.push_back((x[i+1] - x[i]) / dt);
+            y.push_back((y[i+1] - y[i]) / dt);
+        }
+        x.push_back(0.0);  // add (t_final, 0) to the end
+        y.push_back(0.0);  // add (t_final, 0) to the end
+    }
+
+    std::vector<double> positionAtT(const double time) { return {interp1d(t, x, time), interp1d(t, y, time)}; }
+    std::vector<double> velocityAtT(const double time) { return {interp1d(t, vx, time), interp1d(t, vy, time)}; }
+
+    // Getters and setters
+    std::vector<double> getT() const { return t; }
+
+private:
+    std::vector<std::vector<double>> trajectory;
+    std::vector<double> t;
+    std::vector<double> x;
+    std::vector<double> y;
+    std::vector<double> vx;
+    std::vector<double> vy;
+};
 
 
 class Agent {
@@ -106,20 +172,18 @@ private:
 
 class Controller {
 public:
-    Controller(const std::string& trajectoryFileName) {
-        // Read in trajectory file
-        trajectory = loadTrajectory(trajectoryFileName);
+    Controller(const std::string& trajectoryFileName) : trajectory(trajectoryFileName) {
     }
 
     void policy(Agent& agent) {
-        // HERE IS THE CRUX OF THIS PROJECT
+        // HERE IS THE CRUX OF THE CONTROLLING POLICY
         agent.setVelocity({1.0, 0.0});
     }
 
-    double get_t_final() const { return trajectory[trajectory.size() - 1][0]; }
+    double get_t_final() const { return *(trajectory.getT().end() - 1); }
 
 private:
-    std::vector<std::vector<double>> trajectory;
+    Trajectory trajectory;
 };
 
 
