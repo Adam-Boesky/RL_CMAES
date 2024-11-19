@@ -43,12 +43,26 @@ class StraightTrajectory(Trajectory):
         return self.time_vector, self.time_vector
 
 
+class ArcTrajectory(Trajectory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def func(self):
+        theta = 0.25 * np.pi * (self.time_vector / np.max(self.time_vector))
+
+        return (100 * np.cos(theta), 100 * np.sin(theta))
+
+
 def write_trajectories():
     trajectory_dirpath = '/Users/adamboesky/Research/RL_CMAES/trajectories'
 
     # Write a straight line trajectory
     straight_traj = StraightTrajectory(trajectory_dirpath, t_final = 100)
     straight_traj.write('straight.csv')
+
+    # Write an arc trajectory
+    arc_traj = ArcTrajectory(trajectory_dirpath, t_final = 100)
+    arc_traj.write('arc.csv')
 
 
 if __name__=='__main__':
