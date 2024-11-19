@@ -31,13 +31,18 @@ double interp1d( std::vector<double> &xData, std::vector<double> &yData, double 
 }
 
 
-std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFileName) {
+std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFileName, bool hasHeader = true) {
     
     // Read in trajectory file
     std::vector<std::vector<double>> trajectory;
     std::ifstream file(trajectoryFileName);
-    if (file.is_open()) {
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to open file: " + trajectoryFileName);
+    } else {
         std::string line;
+        if (hasHeader && std::getline(file, line)) {
+            // Skip the header line
+        }
         while (std::getline(file, line)) {
             std::vector<double> row;
             std::stringstream ss(line);
@@ -51,8 +56,6 @@ std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFil
             trajectory.push_back(row);
         }
         file.close();
-    } else {
-        std::cerr << "Unable to open file: " << trajectoryFileName << std::endl;
     }
 
     return trajectory;
@@ -63,7 +66,7 @@ class Trajectory {
 public:
     Trajectory(const std::string& trajectoryFileName) {
         // Read in the trajectory filename
-        trajectory = loadTrajectory(trajectoryFileName);
+        trajectory = loadTrajectory(trajectoryFileName, true);
 
         // Get the t, x, and y values
         for (int i=0; i < trajectory.size(); i++) {
@@ -76,11 +79,11 @@ public:
         double dt;
         for (int i=0; i < trajectory.size() - 1; i++) {
             dt = t[i+1] - t[i];
-            x.push_back((x[i+1] - x[i]) / dt);
-            y.push_back((y[i+1] - y[i]) / dt);
+            vx.push_back((x[i+1] - x[i]) / dt);
+            vy.push_back((y[i+1] - y[i]) / dt);
         }
-        x.push_back(0.0);  // add (t_final, 0) to the end
-        y.push_back(0.0);  // add (t_final, 0) to the end
+        vx.push_back(0.0);  // add (t_final, 0) to the end
+        vy.push_back(0.0);  // add (t_final, 0) to the end
     }
 
     std::vector<double> positionAtT(const double time) { return {interp1d(t, x, time), interp1d(t, y, time)}; }
@@ -161,7 +164,7 @@ public:
 private:
     double mass;                                        // [kg]     Mass of the agent
     double thrusterCapacity;                            // [N]      Magnitude of the force exerted by the thruster
-    bool thrusterFiring;                                // [bool]   Whether the thruster is firing
+    bool thrusterFiring = 0;                            // [bool]   Whether the thruster is firing
     double thrusterTheta = 0.0;                         // [rad]    Angle between thruster and y-axis
     std::vector<double> thrusterForce = {0.0, 0.0};     // [N]      Force vector exerted by the thruster
     std::vector<double> position = {0.0, 0.0};          // [m]      Position of the agent (x, y)
@@ -189,7 +192,7 @@ private:
 
 class Sim{
 public:
-    Sim(Agent agent, const Controller& controller, const std::string& logFileName): agent(agent), controller(controller) {
+    Sim(Agent& agent, const Controller& controller, const std::string& logFileName): agent(agent), controller(controller) {
         // Make a log file
         logFile.open(logFileName);
         t_final = controller.get_t_final();
