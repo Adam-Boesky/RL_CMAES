@@ -5,6 +5,34 @@
 #include <cmath>
 
 
+std::vector<std::vector<double>> loadTrajectory(const std::string& trajectoryFileName) {
+    
+    // Read in trajectory file
+    std::vector<std::vector<double>> trajectory;
+    std::ifstream file(trajectoryFileName);
+    if (file.is_open()) {
+        std::string line;
+        while (std::getline(file, line)) {
+            std::vector<double> row;
+            std::stringstream ss(line);
+            double value;
+            while (ss >> value) {
+                row.push_back(value);
+                if (ss.peek() == ',') {
+                    ss.ignore();
+                }
+            }
+            trajectory.push_back(row);
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file: " << trajectoryFileName << std::endl;
+    }
+
+    return trajectory;
+}
+
+
 class Agent {
 public:
     Agent(double mass_kg, double thrustCapacity_N): mass(mass_kg), thrusterCapacity(thrustCapacity_N) {};
@@ -44,6 +72,26 @@ public:
         logFile << "\n";
     }
 
+    // Getters
+    double getMass() const { return mass; }
+    double getThrusterCapacity() const { return thrusterCapacity; }
+    bool isThrusterFiring() const { return thrusterFiring; }
+    double getThrusterTheta() const { return thrusterTheta; }
+    std::vector<double> getThrusterForce() const { return thrusterForce; }
+    std::vector<double> getPosition() const { return position; }
+    std::vector<double> getVelocity() const { return velocity; }
+    std::vector<double> getAcceleration() const { return acceleration; }
+
+    // Setters
+    void setMass(double m) { mass = m; }
+    void setThrusterCapacity(double capacity) { thrusterCapacity = capacity; }
+    void setThrusterFiring(bool firing) { thrusterFiring = firing; }
+    void setThrusterTheta(double theta) { thrusterTheta = theta; }
+    void setThrusterForce(const std::vector<double>& force) { thrusterForce = force; }
+    void setPosition(const std::vector<double>& pos) { position = pos; }
+    void setVelocity(const std::vector<double>& vel) { velocity = vel; }
+    void setAcceleration(const std::vector<double>& acc) { acceleration = acc; }
+
 private:
     double mass;                                        // [kg]     Mass of the agent
     double thrusterCapacity;                            // [N]      Magnitude of the force exerted by the thruster
@@ -58,42 +106,29 @@ private:
 
 class Controller {
 public:
-    void policy(Agent& agent) {
-        // IMPLEMENT POLICY
+    Controller(const std::string& trajectoryFileName) {
+        // Read in trajectory file
+        trajectory = loadTrajectory(trajectoryFileName);
     }
+
+    void policy(Agent& agent) {
+        // HERE IS THE CRUX OF THIS PROJECT
+        agent.setVelocity({1.0, 0.0});
+    }
+
+    double get_t_final() const { return trajectory[trajectory.size() - 1][0]; }
+
+private:
+    std::vector<std::vector<double>> trajectory;
 };
 
 
 class Sim{
 public:
-    Sim(Agent agent, const Controller controller, const std::string& trajectoryFile, const std::string& logFileName): agent(agent), controller(controller) {
-
-        // Read in trajectory file
-        std::ifstream file(trajectoryFile);
-        if (file.is_open()) {
-            std::string line;
-            while (std::getline(file, line)) {
-                std::vector<double> row;
-                std::stringstream ss(line);
-                double value;
-                while (ss >> value) {
-                    row.push_back(value);
-                    if (ss.peek() == ',') {
-                        ss.ignore();
-                    }
-                }
-                trajectory.push_back(row);
-            }
-            file.close();
-        } else {
-            std::cerr << "Unable to open file: " << trajectoryFile << std::endl;
-        }
-
-        // Get the last time
-        t_final = trajectory[trajectory.size() - 1][0];
-
+    Sim(Agent agent, const Controller& controller, const std::string& logFileName): agent(agent), controller(controller) {
         // Make a log file
         logFile.open(logFileName);
+        t_final = controller.get_t_final();
     }
 
     // Run simulation!
@@ -130,18 +165,19 @@ private:
 
 
 int main() {
-    // Create an agent with initial mass and thrust capacity
-    Agent agent(1000.0, 5000.0);
-
-    // Create a controller
-    Controller controller;
 
     // Define the trajectory file and log file names
     std::string trajectoryFile = "/Users/adamboesky/Research/RL_CMAES/trajectories/straight.csv";
     std::string logFileName = "/Users/adamboesky/Research/RL_CMAES/sim_results/test.csv";
 
+    // Create an agent with initial mass and thrust capacity
+    Agent agent(1000.0, 5000.0);
+
+    // Create a controller
+    Controller controller(trajectoryFile);
+
     // Create a simulation
-    Sim simulation(agent, controller, trajectoryFile, logFileName);
+    Sim simulation(agent, controller, logFileName);
 
     // Run the simulation with a time step of 0.1 seconds
     simulation.run_sim(0.1);
