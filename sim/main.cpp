@@ -5,6 +5,15 @@
 #include <cmath>
 
 
+double norm(const std::vector<double>& vec) {
+    double sum = 0;
+    for (double v : vec) {
+        sum += v * v;
+    }
+    return sqrt(sum);
+}
+
+
 // From https://cplusplus.com/forum/general/216928/
 double interp1d( std::vector<double> &xData, std::vector<double> &yData, double x)
 {
@@ -88,6 +97,10 @@ public:
 
     std::vector<double> positionAtT(const double time) { return {interp1d(t, x, time), interp1d(t, y, time)}; }
     std::vector<double> velocityAtT(const double time) { return {interp1d(t, vx, time), interp1d(t, vy, time)}; }
+    double tangentAngleAtT(const double time) {
+        std::vector<double> velocity = velocityAtT(time);
+        return atan2(velocity[0], velocity[1]);
+    }
 
     // Getters and setters
     std::vector<double> getT() const { return t; }
@@ -178,9 +191,45 @@ public:
     Controller(const std::string& trajectoryFileName) : trajectory(trajectoryFileName) {
     }
 
-    void policy(Agent& agent) {
-        // HERE IS THE CRUX OF THE CONTROLLING POLICY
+    void policy(Agent& agent, const double time) {
+
+        // Hyperparameters
+        double gamma = 1.0;
+        double d = 1.0;
+        double s = 1.0;
+
+        // Get the theta
+        double theta = trajectory.tangentAngleAtT(time) + gamma * angleToTrajectory(agent, time);
+
+        // Get the firing boolean
+        std::vector<double> velocity_delta;
+        for (int i=0; i < agent.getVelocity().size(); i++) {
+            velocity_delta.push_back(trajectory.velocityAtT(time)[i] - agent.getVelocity()[i]);
+        }
+        bool firing = (d * norm(agentToTrajectoryVector(agent, time)) + s * norm(velocity_delta)) > 0;
         agent.setVelocity({1.0, 0.0});
+
+        // Update the agent
+        agent.setThrusterTheta(theta);
+        agent.setThrusterFiring(firing);
+    }
+
+    std::vector<double> agentToTrajectoryVector(Agent& agent, const double time) {
+
+        std::vector<double> vec;
+        std::vector<double> trajAtT = trajectory.positionAtT(time);
+        std::vector<double> agentPos = agent.getPosition();
+
+        for (int i=0; i < trajAtT.size(); i++) {
+            vec.push_back(trajAtT[i] - agentPos[i]);
+        }
+
+        return trajectory.positionAtT(time);
+    }
+
+    double angleToTrajectory(Agent& agent, const double time) {
+        std::vector<double> vec = agentToTrajectoryVector(agent, time);
+        return atan2(vec[0], vec[1]);
     }
 
     double get_t_final() const { return *(trajectory.getT().end() - 1); }
@@ -208,7 +257,7 @@ public:
 
         // Simulation loop
         while (time < t_final) {
-            step(dt);
+            step(time, dt);
             time += dt;
             agent.logState(time, logFile);
         }
@@ -222,10 +271,10 @@ private:
     std::ofstream logFile;
     double t_final;
 
-    void step(double dt) {
+    void step(const double time, const double dt) {
 
         // Update the agent according to the policy and then take a step
-        controller.policy(agent);
+        controller.policy(agent, time);
         agent.step(dt);
     }
 };
@@ -234,7 +283,7 @@ private:
 int main() {
 
     // Define the trajectory file and log file names
-    std::string trajectoryFile = "/Users/adamboesky/Research/RL_CMAES/trajectories/straight.csv";
+    std::string trajectoryFile = "/Users/adamboesky/Research/RL_CMAES/trajectories/arc.csv";
     std::string logFileName = "/Users/adamboesky/Research/RL_CMAES/sim_results/test.csv";
 
     // Create an agent with initial mass and thrust capacity
