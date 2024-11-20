@@ -50,7 +50,7 @@ class ArcTrajectory(Trajectory):
     def func(self):
         theta = 0.25 * np.pi * (self.time_vector / np.max(self.time_vector))
 
-        return (100 * np.cos(theta), 100 * np.sin(theta))
+        return (100 * np.cos(theta) - 100, 100 * np.sin(theta))
 
 
 def write_trajectories():
