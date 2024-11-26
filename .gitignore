@@ -1,11 +1,14 @@
 # Prerequisites
 *.d
 
-# Compiled Object files
+# Compiled Object Files
 *.slo
 *.lo
 *.o
 *.obj
+
+# Compiled Binary Files
+main
 
 # Precompiled Headers
 *.gch
@@ -16,7 +19,7 @@
 *.dylib
 *.dll
 
-# Fortran module files
+# Fortran module Files
 *.mod
 *.smod
 
@@ -33,3 +36,6 @@
 
 # Python stuff
 __pycache__
+
+# MacOS System Files
+.DS_Store
