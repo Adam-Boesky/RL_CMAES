@@ -282,9 +282,20 @@ private:
 
 int main() {
 
-    // Define the trajectory file and log file names
-    std::string trajectoryFile = "/Users/adamboesky/Research/RL_CMAES/trajectories/arc.csv";
-    std::string logFileName = "/Users/adamboesky/Research/RL_CMAES/sim_results/test.csv";
+     // Define the trajectory file and log file filename variables
+    std::string trajectoryFile;
+    std::string logFileName;
+
+    // Retrieve root path environment variable
+    std::string root_path = std::getenv("RL_CMAES_ROOT");
+
+    if (root_path.length() > 0) {
+        trajectoryFile = root_path + "/trajectories/arc.csv";
+        logFileName = root_path + "/sim_results/test.csv";
+    } else {
+        std::cerr << "Error: RL_CMAES_ROOT environment variable not set.\n";
+        return 1;
+    }
 
     // Create an agent with initial mass and thrust capacity
     Agent agent(1000.0, 5000.0);
