@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
+#include <math.h>
 
 
 double norm(const std::vector<double>& vec) {
@@ -99,7 +100,7 @@ public:
     std::vector<double> velocityAtT(const double time) { return {interp1d(t, vx, time), interp1d(t, vy, time)}; }
     double tangentAngleAtT(const double time) {
         std::vector<double> velocity = velocityAtT(time);
-        return atan2(velocity[0], velocity[1]);
+        return atan2(velocity[1], velocity[0]);
     }
 
     // Getters and setters
@@ -123,15 +124,15 @@ public:
     // Execute one step
     void step(double dt) {
 
-        // Get the force vector
-        thrusterForce[0] = thrusterFiring * thrusterCapacity * sin(thrusterTheta);      // Fx = I(firing) * |F|sin(theta)
-        thrusterForce[1] = thrusterFiring * thrusterCapacity * cos(thrusterTheta);      // Fx = I(firing) * |F|cos(theta)
+        // Get the force vector (opposite and equal the force of the thruster)
+        thrusterForce[0] = -1.0 * thrusterFiring * thrusterCapacity * cos(thrusterTheta);   // Fx = I(firing) * |F|sin(theta)
+        thrusterForce[1] = -1.0 * thrusterFiring * thrusterCapacity * sin(thrusterTheta);   // Fx = I(firing) * |F|cos(theta)
 
         // Update the acceleration and velocity
         for (int i=0; i < acceleration.size(); i++) {
-            acceleration[i] = thrusterForce[i] / mass;                                  // a = F/m
-            position[i] += (velocity[i] * dt) + (0.5 * acceleration[i] * dt * dt);      // x = x0 + v0*dt + (1/2)*a*dt^2
-            velocity[i] += acceleration[i] * dt;                                        // v = v0 + a*dt
+            acceleration[i] = thrusterForce[i] / mass;                                      // a = F/m
+            position[i] += (velocity[i] * dt) + (0.5 * acceleration[i] * dt * dt);          // x = x0 + v0*dt + (1/2)*a*dt^2
+            velocity[i] += acceleration[i] * dt;                                            // v = v0 + a*dt
         }
     }
 
@@ -199,7 +200,7 @@ public:
         double s = 1.0;
 
         // Get the theta
-        double theta = trajectory.tangentAngleAtT(time) + gamma * angleToTrajectory(agent, time);
+        double theta = (trajectory.tangentAngleAtT(time) - M_PI) + gamma * angleToTrajectory(agent, time);
 
         // Get the firing boolean
         std::vector<double> velocity_delta;
@@ -207,7 +208,6 @@ public:
             velocity_delta.push_back(trajectory.velocityAtT(time)[i] - agent.getVelocity()[i]);
         }
         bool firing = (d * norm(agentToTrajectoryVector(agent, time)) + s * norm(velocity_delta)) > 0;
-        agent.setVelocity({1.0, 0.0});
 
         // Update the agent
         agent.setThrusterTheta(theta);
@@ -224,12 +224,12 @@ public:
             vec.push_back(trajAtT[i] - agentPos[i]);
         }
 
-        return trajectory.positionAtT(time);
+        return vec;
     }
 
     double angleToTrajectory(Agent& agent, const double time) {
         std::vector<double> vec = agentToTrajectoryVector(agent, time);
-        return atan2(vec[0], vec[1]);
+        return atan2(vec[1], vec[0]);
     }
 
     double get_t_final() const { return *(trajectory.getT().end() - 1); }
@@ -241,7 +241,7 @@ private:
 
 class Sim{
 public:
-    Sim(Agent& agent, const Controller& controller, const std::string& logFileName): agent(agent), controller(controller) {
+    Sim(Agent& agent, const Controller& controller, const std::string& logFileName, const bool verbose = false): agent(agent), controller(controller), verbose(verbose) {
         // Make a log file
         logFile.open(logFileName);
         t_final = controller.get_t_final();
@@ -251,7 +251,11 @@ public:
     void run_sim(const double dt) {
 
         // Write log file header and initial log line
-        logFile << "time,x,y,velocity_x,velocity_y,acceleration_x,acceleration_y\n";
+        if (verbose) {
+            logFile << "time,x,y,velocity_x,velocity_y,acceleration_x,acceleration_y\n";  // TODO: IMPLEMENT VERBOSE LOGGING
+        } else {
+            logFile << "time,x,y,velocity_x,velocity_y,acceleration_x,acceleration_y\n";
+        }
         double time = 0;
         agent.logState(time, logFile);
 
@@ -270,6 +274,7 @@ private:
     std::vector<std::vector<double>> trajectory;
     std::ofstream logFile;
     double t_final;
+    bool verbose;
 
     void step(const double time, const double dt) {
 
@@ -280,7 +285,7 @@ private:
 };
 
 
-int main() {
+int main(int argc, char* argv[]) {
 
      // Define the trajectory file and log file filename variables
     std::string trajectoryFile;
@@ -290,15 +295,23 @@ int main() {
     std::string root_path = std::getenv("RL_CMAES_ROOT");
 
     if (root_path.length() > 0) {
-        trajectoryFile = root_path + "/trajectories/arc.csv";
+        trajectoryFile = root_path + "/trajectories/straight.csv";
         logFileName = root_path + "/sim_results/test.csv";
     } else {
         std::cerr << "Error: RL_CMAES_ROOT environment variable not set.\n";
         return 1;
     }
 
+    // Parse command line arguments
+    bool verbose = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--verbose") == 0) {
+            verbose = true;
+        }
+    }
+
     // Create an agent with initial mass and thrust capacity
-    Agent agent(1000.0, 5000.0);
+    Agent agent(1000.0, 1000.0);
 
     // Create a controller
     Controller controller(trajectoryFile);
