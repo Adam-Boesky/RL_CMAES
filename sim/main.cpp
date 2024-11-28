@@ -191,12 +191,7 @@ public:
     Controller(const std::string& trajectoryFileName) : trajectory(trajectoryFileName) {
     }
 
-    void policy(Agent& agent, const double time) {
-
-        // Hyperparameters
-        double gamma = 1.0;
-        double d = 1.0;
-        double s = 1.0;
+    void policy(Agent& agent, double gamma, double d, double s, const double time) {
 
         // Get the theta
         double theta = trajectory.tangentAngleAtT(time) + gamma * angleToTrajectory(agent, time);
@@ -206,7 +201,7 @@ public:
         for (int i=0; i < agent.getVelocity().size(); i++) {
             velocity_delta.push_back(trajectory.velocityAtT(time)[i] - agent.getVelocity()[i]);
         }
-        bool firing = (d * norm(agentToTrajectoryVector(agent, time)) + s * norm(velocity_delta)) > 0;
+        bool firing = (d * norm(agentToTrajectoryVector(agent, time)) + s * norm(velocity_delta)) > 0.5;
         agent.setVelocity({1.0, 0.0});
 
         // Update the agent
@@ -248,7 +243,7 @@ public:
     }
 
     // Run simulation!
-    void run_sim(const double dt) {
+    void run_sim(const double dt, double gamma, double s, double d) {
 
         // Write log file header and initial log line
         logFile << "time,x,y,velocity_x,velocity_y,acceleration_x,acceleration_y\n";
@@ -257,7 +252,7 @@ public:
 
         // Simulation loop
         while (time < t_final) {
-            step(time, dt);
+            step(time, dt, gamma, s, d);
             time += dt;
             agent.logState(time, logFile);
         }
@@ -271,18 +266,20 @@ private:
     std::ofstream logFile;
     double t_final;
 
-    void step(const double time, const double dt) {
+    void step(const double time, const double dt, double gamma, double s, double d) {
 
         // Update the agent according to the policy and then take a step
-        controller.policy(agent, time);
+        controller.policy(agent, time, gamma, s, d);
         agent.step(dt);
     }
 };
 
 
-int main() {
+int main(int argc, char* argv[]) {
 
-     // Define the trajectory file and log file filename variables
+    if (argc < 4)
+        return 1;
+    // Define the trajectory file and log file filename variables
     std::string trajectoryFile;
     std::string logFileName;
 
@@ -307,7 +304,10 @@ int main() {
     Sim simulation(agent, controller, logFileName);
 
     // Run the simulation with a time step of 0.1 seconds
-    simulation.run_sim(0.1);
+    double gamma = std::stod(argv[1]);
+    double s = std::stod(argv[2]);
+    double d = std::stod(argv[3]);
+    simulation.run_sim(0.1, gamma, s, d);
 
     return 0;
 }
