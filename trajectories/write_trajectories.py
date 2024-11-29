@@ -40,7 +40,7 @@ class StraightTrajectory(Trajectory):
         super().__init__(*args, **kwargs)
 
     def func(self):
-        return -0.75 * self.time_vector, 0.75 * self.time_vector
+        return 1 * self.time_vector, 0 * self.time_vector
 
 
 class ArcTrajectory(Trajectory):
@@ -52,9 +52,16 @@ class ArcTrajectory(Trajectory):
 
         return (100 * np.sin(theta), 100 * np.cos(theta) - 100)
 
+class SineTrajectory(Trajectory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def func(self):
+        return [self.time_vector, np.sin(self.time_vector * 2 * np.pi / self.time_vector[-1])]
+
 
 def write_trajectories():
-    trajectory_dirpath = '/Users/adamboesky/Research/RL_CMAES/trajectories'
+    trajectory_dirpath = os.environ['RL_CMAES_ROOT'] + '/trajectories'
 
     # Write a straight line trajectory
     straight_traj = StraightTrajectory(trajectory_dirpath, t_final = 100)
@@ -63,6 +70,10 @@ def write_trajectories():
     # Write an arc trajectory
     arc_traj = ArcTrajectory(trajectory_dirpath, t_final = 100)
     arc_traj.write('arc.csv')
+
+    # Write a sine trajctory
+    sin_traj = SineTrajectory(trajectory_dirpath, t_final = 100)
+    sin_traj.write('sine.csv')
 
 
 if __name__=='__main__':
