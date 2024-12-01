@@ -10,7 +10,7 @@ def norm(v):
     ''' Computes the Euclidian norm of a vector. '''
     return np.sqrt(sum([x*x for x in v]))
 
-trajectories = ["sine"]
+trajectories = ["arc"]
 
 # Objective function
 def objective_function(x):
@@ -42,8 +42,8 @@ def objective_function(x):
 
 
 if __name__ == "__main__":
-    initial_mean = [10, 10, 10]
-    sigma = 2
+    initial_mean = [10,0,0]
+    sigma = 5
     
     es = cma.CMAEvolutionStrategy(initial_mean, sigma)
     
@@ -51,3 +51,11 @@ if __name__ == "__main__":
     result = es.result
     print("Optimized solution:", result[0])
     print("Best value found:", result[1])
+
+
+
+
+
+# 1. color by speed to see where to improve policy
+# 2. improve the policy
+# 3. get a video going of a working policy
