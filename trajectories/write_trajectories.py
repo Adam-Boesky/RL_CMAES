@@ -57,7 +57,7 @@ class SineTrajectory(Trajectory):
         super().__init__(*args, **kwargs)
 
     def func(self):
-        return [self.time_vector, 50 * np.sin(self.time_vector * 2 * np.pi / self.time_vector[-1])]
+        return [2 * self.time_vector, 10 * np.sin(self.time_vector * 2 * np.pi / 100)]
 
 
 def write_trajectories():

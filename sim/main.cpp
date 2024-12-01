@@ -210,72 +210,18 @@ public:
 
     void policy(Agent& agent, double gamma, double s, double d, const double time) {
 
-        // std::vector<double> target_velo = trajectory.velocityAtT(time);
-        // std::vector<double> location_diff = agentToTrajectoryVector(agent, time);
-        // std::vector<double> agent_velo = agent.getVelocity();
-
-        // bool left = location_diff[0] < 0.0;
-        // bool above = location_diff[1] > 0.0;
-        // double angle_to_target_pos = angleToTrajectory(agent, time);
-        // double agent_norm = norm(agent_velo);
-        // if (agent_norm < 1E-6)
-        //     agent_norm = 1;
-        // double angle_btwn_velos = acos(dot_product(target_velo, agent_velo) / (norm(target_velo) * agent_norm));
-
-        // double theta = left * M_PI;
-        // if ((left & above) || (!left & !above))
-        //     theta -= angle_to_target_pos;
-        // else
-        //     theta += angle_to_target_pos;
-        // theta += ((2 * left - 1) * gamma * angle_btwn_velos);
-        // std::abs((loc_diff_norm + velo_diff_norm) / (s * loc_diff_norm + d * velo_diff_norm)) > 0.5;
-
-        // double diff_velocity_norms = norm(agent.getVelocity()) - norm(trajectory.velocityAtT(time));
-
-        // bool firing = s * diff_velocity_norms / (diff_velocity_norms + d * norm(location_diff)) < 0.5;
+        double traj_velo_angle = trajectory.tangentAngleAtT(time);
+        std::vector<double> traj_velo = trajectory.velocityAtT(time);
+        std::vector<double> traj_pos = trajectory.positionAtT(time);
         
-        // (s * diff_velocity_norms) / (diff_velocity_norms + d * norm(location_diff)) < 0.5;
-
-
-
+        std::vector<double> agent_pos = agent.getPosition();
         
-        // // Get the firing boolean
-        // std::vector<double> velocity_delta;
-        // for (int i=0; i < agent.getVelocity().size(); i++) {ds
-        //     velocity_delta.push_back(trajectory.velocityAtT(time)[i] - agent.getVelocity()[i]);
-        // }
+        std::vector<double> pos_diff = sub_vec(traj_pos, agent_pos);
+        std::vector<double> vec_to_future = sum_vec(pos_diff, traj_velo);
+        double angle_to_future = atan2(vec_to_future[1], vec_to_future[0]);
 
-        // double loc_diff_norm = norm(agentToTrajectoryVector(agent, time));
-        // double velo_diff_norm = norm(velocity_delta);
-        // double angle_diff = trajectory.tangentAngleAtT(time) - angleToTrajectory(agent, time);
-
-        // double theta = (trajectory.tangentAngleAtT(time) - M_PI) + gamma * angle_diff;
-        // bool firing = 0.1 * velo_diff_norm + s * loc_diff_norm > d;
-
-
-        // // policy attempt 3
-        // auto traj_velo = trajectory.velocityAtT(time);
-        // auto traj_pos = trajectory.positionAtT(time);
-        // auto agent_pos = agent.getPosition();
-        // auto pos_diff = sub_vec(traj_pos, agent_pos);
-        // auto agent_velo = agent.getVelocity();
-        // auto velo_diff_norm = norm(sub_vec(agent_velo, traj_velo));
-        // std::vector<double> forward_vec = sum_vec(traj_velo, pos_diff);
-        // double forward_vec_angle = atan2(forward_vec[1], forward_vec[0]) - M_PI;
-    
-        // double theta = gamma * (trajectory.tangentAngleAtT(time) - M_PI) + forward_vec_angle;
-
-        // bool firing = velo_diff_norm + s * norm(pos_diff) > abs(d);
-
-
-
-        auto traj_pos = trajectory.positionAtT(time);
-        auto agent_pos = agent.getPosition();
-        auto pos_diff = sub_vec(traj_pos, agent_pos);
-
-        double theta = (trajectory.tangentAngleAtT(time) - M_PI) + d * (atan2(pos_diff[1], pos_diff[0]) - M_PI);
-        bool firing = norm(pos_diff) > gamma / 10.0;
-
+        double theta = s * (traj_velo_angle - M_PI) + d * (angle_to_future - M_PI);
+        double firing = norm(pos_diff) > gamma;
 
         // Update the agent
         agent.setThrusterTheta(theta);
@@ -347,7 +293,7 @@ private:
     void step(const double time, const double dt, double gamma, double s, double d) {
 
         // Update the agent according to the policy and then take a step
-        controller.policy(agent, time, gamma, s, d);
+        controller.policy(agent, gamma, s, d, time);
         agent.step(dt);
     }
 };
@@ -355,7 +301,7 @@ private:
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 4)
+    if (argc < 5)
         return 1;
     // Define the trajectory file and log file filename variables
     std::string trajectoryFile;
@@ -363,10 +309,10 @@ int main(int argc, char* argv[]) {
 
     // Retrieve root path environment variable
     std::string root_path = std::getenv("RL_CMAES_ROOT");
-
+    std::string trajectory = argv[4];
     if (root_path.length() > 0) {
-        trajectoryFile = root_path + "/trajectories/arc.csv"; // edit this for which trajectory to learn
-        logFileName = root_path + "/sim_results/test.csv";
+        trajectoryFile = root_path + "/trajectories/" + trajectory + ".csv";
+        logFileName = root_path + "/sim_results/train.csv";
     } else {
         std::cerr << "Error: RL_CMAES_ROOT environment variable not set.\n";
         return 1;
@@ -381,7 +327,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Create an agent with initial mass and thrust capacity
-    Agent agent(1000.0, 500);
+    Agent agent(1000.0, 300.0);
 
     // Create a controller
     Controller controller(trajectoryFile);
@@ -397,3 +343,83 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
+                // -------------- JUNK POLICY ATTEMPTS -------------- //
+
+// // stupid policy function :) (oscillates around the trajectory; bad for sine)
+// auto traj_pos = trajectory.positionAtT(time);
+// auto agent_pos = agent.getPosition();
+// auto pos_diff = sub_vec(traj_pos, agent_pos);
+// double theta = atan2(pos_diff[1], pos_diff[0]) - M_PI;
+// double firing = norm(pos_diff) > 2.0;
+
+// std::cout << traj_pos[0] << traj_pos[1] << " " << time << std::endl;
+
+
+
+// previous policy attempts
+// std::vector<double> target_velo = trajectory.velocityAtT(time);
+        // std::vector<double> location_diff = agentToTrajectoryVector(agent, time);
+        // std::vector<double> agent_velo = agent.getVelocity();
+
+        // bool left = location_diff[0] < 0.0;
+        // bool above = location_diff[1] > 0.0;
+        // double angle_to_target_pos = angleToTrajectory(agent, time);
+        // double agent_norm = norm(agent_velo);
+        // if (agent_norm < 1E-6)
+        //     agent_norm = 1;
+        // double angle_btwn_velos = acos(dot_product(target_velo, agent_velo) / (norm(target_velo) * agent_norm));
+
+        // double theta = left * M_PI;
+        // if ((left & above) || (!left & !above))
+        //     theta -= angle_to_target_pos;
+        // else
+        //     theta += angle_to_target_pos;
+        // theta += ((2 * left - 1) * gamma * angle_btwn_velos);
+        // std::abs((loc_diff_norm + velo_diff_norm) / (s * loc_diff_norm + d * velo_diff_norm)) > 0.5;
+
+        // double diff_velocity_norms = norm(agent.getVelocity()) - norm(trajectory.velocityAtT(time));
+
+        // bool firing = s * diff_velocity_norms / (diff_velocity_norms + d * norm(location_diff)) < 0.5;
+        
+        // (s * diff_velocity_norms) / (diff_velocity_norms + d * norm(location_diff)) < 0.5;
+
+
+
+        
+        // Get the firing boolean
+        // std::vector<double> velocity_delta;
+        // for (int i=0; i < agent.getVelocity().size(); i++) {
+        //     velocity_delta.push_back(trajectory.velocityAtT(time)[i] - agent.getVelocity()[i]);
+        // }
+
+        // double loc_diff_norm = norm(agentToTrajectoryVector(agent, time));
+        // double velo_diff_norm = norm(velocity_delta);
+        // double angle_diff = trajectory.tangentAngleAtT(time) - angleToTrajectory(agent, time);
+
+        // double theta = (trajectory.tangentAngleAtT(time) - M_PI) + gamma * angle_diff;
+        // bool firing = 0.1 * velo_diff_norm + s * loc_diff_norm > d;
+
+
+        // // policy attempt 3
+        // auto traj_velo = trajectory.velocityAtT(time);
+        // auto traj_pos = trajectory.positionAtT(time);
+        // auto agent_pos = agent.getPosition();
+        // auto pos_diff = sub_vec(traj_pos, agent_pos);
+        // auto agent_velo = agent.getVelocity();
+        // auto velo_diff_norm = norm(sub_vec(agent_velo, traj_velo));
+        // std::vector<double> forward_vec = sum_vec(traj_velo, pos_diff);
+        // double forward_vec_angle = atan2(forward_vec[1], forward_vec[0]) - M_PI;
+    
+        // double theta = gamma * (trajectory.tangentAngleAtT(time) - M_PI) + forward_vec_angle;
+
+        // bool firing = velo_diff_norm + s * norm(pos_diff) > abs(d);
+
+
+
+        // auto traj_pos = trajectory.positionAtT(time);
+        // auto agent_pos = agent.getPosition();
+        // auto pos_diff = sub_vec(traj_pos, agent_pos);
+
+        // double theta = (trajectory.tangentAngleAtT(time) - M_PI) + d * (atan2(pos_diff[1], pos_diff[0]) - M_PI);
+        // bool firing = norm(pos_diff) > gamma / 10.0;
