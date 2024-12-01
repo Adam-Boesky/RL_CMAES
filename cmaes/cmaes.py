@@ -10,7 +10,7 @@ def norm(v):
     '''Computes the Euclidian norm of a vector.'''
     return np.sqrt(sum([x*x for x in v]))
 
-trajectories = ["sine"]
+trajectories = ["poly"]
 
 # Objective function
 def objective_function(x):
@@ -20,14 +20,16 @@ def objective_function(x):
     '''
 
     gamma = str(x[0])
-    s = str(x[1])
-    d = str(x[2])
+    alpha = str(x[1])
+    r = str(x[2])
+    s = str(x[3])
+    d = str(x[4])
 
     current_trajectory = random.choice(trajectories)
     command_to_run_sim = "./sim/main"
 
     # 1. Run a trajectory with the sampled MVN in the CMA-ES
-    subprocess.run([command_to_run_sim, gamma, s, d, current_trajectory], capture_output=True, text=True)
+    subprocess.run([command_to_run_sim, gamma, alpha, r, s, d, current_trajectory], capture_output=True, text=True)
 
     # 2. Read in the actual and target trajectory values generated during the previous run
     actual_trajectory = pd.read_csv("./sim_results/train.csv").iloc[:-1, :]
@@ -43,8 +45,8 @@ def objective_function(x):
 
 
 if __name__ == "__main__":
-    initial_mean = [0,0,0]
-    sigma = 4
+    initial_mean = [0,0,0,0,0]
+    sigma = 5
     
     es = cma.CMAEvolutionStrategy(initial_mean, sigma)
     

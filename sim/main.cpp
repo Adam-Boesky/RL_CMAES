@@ -208,20 +208,24 @@ public:
     Controller(const std::string& trajectoryFileName) : trajectory(trajectoryFileName) {
     }
 
-    void policy(Agent& agent, double gamma, double s, double d, const double time) {
+    Trajectory trajectory;
+
+    void policy(Agent& agent, double gamma, double alpha, double r, double s, double d, const double time) {
 
         double traj_velo_angle = trajectory.tangentAngleAtT(time);
         std::vector<double> traj_velo = trajectory.velocityAtT(time);
         std::vector<double> traj_pos = trajectory.positionAtT(time);
         
         std::vector<double> agent_pos = agent.getPosition();
+        std::vector<double> agent_velo = agent.getVelocity();
         
         std::vector<double> pos_diff = sub_vec(traj_pos, agent_pos);
         std::vector<double> vec_to_future = sum_vec(pos_diff, traj_velo);
         double angle_to_future = atan2(vec_to_future[1], vec_to_future[0]);
+        double pos_diff_angle = atan2(pos_diff[1], pos_diff[0]);
 
-        double theta = s * (traj_velo_angle - M_PI) + d * (angle_to_future - M_PI);
-        double firing = norm(pos_diff) > gamma;
+        double theta = r * (pos_diff_angle - M_PI) + s * (traj_velo_angle - M_PI) + d * (angle_to_future - M_PI);
+        double firing = alpha * norm(sub_vec(traj_velo, agent_velo)) + norm(pos_diff) > abs(gamma);
 
         // Update the agent
         agent.setThrusterTheta(theta);
@@ -247,9 +251,7 @@ public:
     }
 
     double get_t_final() const { return *(trajectory.getT().end() - 1); }
-
-private:
-    Trajectory trajectory;
+    
 };
 
 
@@ -262,7 +264,7 @@ public:
     }
 
     // Run simulation!
-    void run_sim(const double dt, double gamma, double s, double d) {
+    void run_sim(const double dt, double gamma, double alpha, double r, double s, double d) {
 
         // Write log file header and initial log line
         if (verbose) {
@@ -275,7 +277,7 @@ public:
 
         // Simulation loop
         while (time < t_final) {
-            step(time, dt, gamma, s, d);
+            step(time, dt, gamma, alpha, r, s, d);
             time += dt;
             agent.logState(time, logFile);
         }
@@ -290,10 +292,10 @@ private:
     double t_final;
     bool verbose;
 
-    void step(const double time, const double dt, double gamma, double s, double d) {
+    void step(const double time, const double dt, double gamma, double alpha, double r, double s, double d) {
 
         // Update the agent according to the policy and then take a step
-        controller.policy(agent, gamma, s, d, time);
+        controller.policy(agent, gamma, alpha, r, s, d, time);
         agent.step(dt);
     }
 };
@@ -301,7 +303,7 @@ private:
 
 int main(int argc, char* argv[]) {
 
-    if (argc < 5)
+    if (argc < 7)
         return 1;
     // Define the trajectory file and log file filename variables
     std::string trajectoryFile;
@@ -309,7 +311,7 @@ int main(int argc, char* argv[]) {
 
     // Retrieve root path environment variable
     std::string root_path = std::getenv("RL_CMAES_ROOT");
-    std::string trajectory = argv[4];
+    std::string trajectory = argv[6];
     if (root_path.length() > 0) {
         trajectoryFile = root_path + "/trajectories/" + trajectory + ".csv";
         logFileName = root_path + "/sim_results/train.csv";
@@ -326,20 +328,24 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Create an agent with initial mass and thrust capacity
-    Agent agent(1000.0, 300.0);
-
+    
     // Create a controller
     Controller controller(trajectoryFile);
+
+    // Create an agent with initial mass and thrust capacity
+    Agent agent(1000.0, 400.0);
+    agent.setVelocity(controller.trajectory.velocityAtT(0.0));
 
     // Create a simulation
     Sim simulation(agent, controller, logFileName);
 
     // Run the simulation with a time step of 0.1 seconds
     double gamma = std::stod(argv[1]);
-    double s = std::stod(argv[2]);
-    double d = std::stod(argv[3]);
-    simulation.run_sim(0.1, gamma, s, d);
+    double alpha = std::stod(argv[2]);
+    double r = std::stod(argv[3]);
+    double s = std::stod(argv[4]);
+    double d = std::stod(argv[5]);
+    simulation.run_sim(0.1, gamma, alpha, r, s, d);
 
     return 0;
 }
