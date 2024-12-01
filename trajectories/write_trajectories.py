@@ -40,7 +40,7 @@ class StraightTrajectory(Trajectory):
         super().__init__(*args, **kwargs)
 
     def func(self):
-        return 1 * self.time_vector, 0 * self.time_vector
+        return 0.3 * self.time_vector, -0.5 * self.time_vector
 
 
 class ArcTrajectory(Trajectory):
@@ -57,7 +57,7 @@ class SineTrajectory(Trajectory):
         super().__init__(*args, **kwargs)
 
     def func(self):
-        return [self.time_vector, np.sin(self.time_vector * 2 * np.pi / self.time_vector[-1])]
+        return [2 * self.time_vector, 10 * np.sin(self.time_vector * 2 * np.pi / 100)]
 
 
 def write_trajectories():

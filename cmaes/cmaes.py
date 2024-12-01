@@ -7,7 +7,7 @@ import random
 
 
 def norm(v):
-    ''' Computes the Euclidian norm of a vector. '''
+    '''Computes the Euclidian norm of a vector.'''
     return np.sqrt(sum([x*x for x in v]))
 
 trajectories = ["sine"]
@@ -23,13 +23,14 @@ def objective_function(x):
     s = str(x[1])
     d = str(x[2])
 
+    current_trajectory = random.choice(trajectories)
     command_to_run_sim = "./sim/main"
+
     # 1. Run a trajectory with the sampled MVN in the CMA-ES
-    subprocess.run([command_to_run_sim, gamma, s, d], capture_output=True, text=True)
+    subprocess.run([command_to_run_sim, gamma, s, d, current_trajectory], capture_output=True, text=True)
 
     # 2. Read in the actual and target trajectory values generated during the previous run
-    current_trajectory = random.choice(trajectories)
-    actual_trajectory = pd.read_csv("./sim_results/test.csv").iloc[:-1, :]
+    actual_trajectory = pd.read_csv("./sim_results/train.csv").iloc[:-1, :]
     target_trajectory = pd.read_csv(f"./trajectories/{current_trajectory}.csv")
 
     # 3. Calculate and return the loss values
@@ -42,8 +43,8 @@ def objective_function(x):
 
 
 if __name__ == "__main__":
-    initial_mean = [10, 10, 10]
-    sigma = 2
+    initial_mean = [0,0,0]
+    sigma = 4
     
     es = cma.CMAEvolutionStrategy(initial_mean, sigma)
     
@@ -51,3 +52,11 @@ if __name__ == "__main__":
     result = es.result
     print("Optimized solution:", result[0])
     print("Best value found:", result[1])
+
+
+
+
+
+# 1. color by speed to see where to improve policy
+# 2. improve the policy
+# 3. get a video going of a working policy
