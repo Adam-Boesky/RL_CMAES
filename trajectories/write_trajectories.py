@@ -109,7 +109,6 @@ def write_trajectories():
     loop_traj = LoopTrajectory(trajectory_dirpath, t_final = 100)
     loop_traj.write('loop.csv')
 
-
     # Write a polynomial trajectory
     poly_traj = PolyTrajectory(trajectory_dirpath, t_final = 100)
     poly_traj.write('poly.csv')
