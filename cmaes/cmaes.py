@@ -10,7 +10,7 @@ def norm(v):
     '''Computes the Euclidian norm of a vector.'''
     return np.sqrt(sum([x*x for x in v]))
 
-trajectories = ["loop"]
+trajectories = ["sawtooth"]
 current_trajectory = trajectories[0]
 
 # Objective function
@@ -56,4 +56,4 @@ if __name__ == "__main__":
     print("Best value found:", result[1])
 
     param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
-    pd.DataFrame([np.append(result[0], [result[1]])], columns=param_names, index=False).to_csv(f"./policy_params/{current_trajectory}.csv")
+    pd.DataFrame([np.append(result[0], [result[1]])], columns=param_names).to_csv(f"./policy_params/{current_trajectory}.csv", index=False)

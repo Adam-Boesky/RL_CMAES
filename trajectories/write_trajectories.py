@@ -91,7 +91,7 @@ class SawtoothTrajectory(Trajectory):
 
     def func(self):
         # Generate a sawtooth wave: y(t) ranges from -1 to 1 over the period
-        return [2 * self.time_vector, 10 * (self.time_vector / 50 % 1) ]
+        return [self.time_vector, 10 * abs(np.sin(2 * np.pi * self.time_vector / 100))]
 
 
 def write_trajectories():
