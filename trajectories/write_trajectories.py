@@ -59,6 +59,27 @@ class SineTrajectory(Trajectory):
     def func(self):
         return [2 * self.time_vector, 10 * np.sin(self.time_vector * 2 * np.pi / 100)]
 
+class LoopTrajectory(Trajectory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def func(self):
+        return [30*np.cos(self.time_vector*2*np.pi/100) + self.time_vector*30*2*np.pi/400 - 30, 30*np.sin(self.time_vector*2*np.pi /100)]
+
+
+def f(x):
+    return x * (x - 100)**2 * (x - 40)**3 / 9e7
+
+class PolyTrajectory(Trajectory): # ChatGPT
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def func(self):
+        x = self.time_vector
+        y = f(self.time_vector)
+        x_rot = (np.sqrt(2) / 2) * (x - y)  # Rotated x
+        y_rot = (np.sqrt(2) / 2) * (x + y)  # Rotated y
+        return [0.25 * x_rot, 0.25 * y_rot]
 
 def write_trajectories():
     trajectory_dirpath = os.environ['RL_CMAES_ROOT'] + '/trajectories'
@@ -75,6 +96,14 @@ def write_trajectories():
     sin_traj = SineTrajectory(trajectory_dirpath, t_final = 100)
     sin_traj.write('sine.csv')
 
+    # Write a loop trajectory
+    loop_traj = LoopTrajectory(trajectory_dirpath, t_final = 100)
+    loop_traj.write('loop.csv')
+
+
+    # Write a polynomial trajectory
+    poly_traj = PolyTrajectory(trajectory_dirpath, t_final = 100)
+    poly_traj.write('poly.csv')
 
 if __name__=='__main__':
     write_trajectories()

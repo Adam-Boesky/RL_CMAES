@@ -53,23 +53,6 @@ def plot_result(result_fname: str, ax: Optional[plt.Axes] = None, coloring: Opti
     cbar = plt.colorbar(scatter, ax=ax)
     cbar.set_label(cbar_label)
 
-    # # Add arrows for each point (ChatGPT)
-    # arrow_scale = 0.2
-    # for _, row in agent.iterrows():
-    #     x, y = row['x'], row['y']
-    #     theta = row['theta']
-    #     firing = row['firing']
-    #     color = 'red' if firing == 1 else 'black'
-
-    #     # Arrow parameters
-    #     dx = arrow_scale * np.cos(theta)  # Length in x-direction
-    #     dy = arrow_scale * np.sin(theta)  # Length in y-direction
-
-    #     # Draw the arrow
-    #     ax.arrow(x, y, dx, dy, head_width=0.05, head_length=0.1, fc=color, ec=color, zorder=5)
-
-
-
     # Formatting
     ax.legend()
 
