@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.animation import FuncAnimation
 from scipy.interpolate import interp1d
+import os
+import subprocess
 
 
 def plot_trajectory(trajectory_fname: str, ax: Optional[plt.Axes] = None) -> plt.Axes:
@@ -174,3 +176,26 @@ def generate_animation(trajectory_fname: str, result_fname: str, output_fname: s
 
     # Close the plot to prevent display
     plt.close(fig)
+
+
+def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = 'speed'):
+    
+    path = os.environ['RL_CMAES_ROOT']
+    command_to_run_sim = "./sim/main"
+    
+    params = pd.read_csv(path + "/policy_params/" + trajectory_name + "_vals.csv")
+    gamma = params['gamma'].values[0]
+    alpha = params['alpha'].values[0]
+    r = params['r'].values[0]
+    s = params['s'].values[0]
+    d = params['d'].values[0]
+
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name], capture_output=True, text=True)
+
+    plot_result_and_trajectory(path + f"/trajectories/{trajectory_name}.csv", path + '/sim_results/train.csv', coloring=coloring)
+    plt.grid(ls=':', lw=0.5)
+
+    plt.show()
+
+if __name__ == "__main__":
+    plot_results_with_params("sine", "speed")
