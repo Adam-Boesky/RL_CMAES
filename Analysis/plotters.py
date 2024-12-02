@@ -202,5 +202,21 @@ def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = Non
     return ax
 
 
+def generate_animation_with_params(trajectory_name: str,):
+    path = os.environ['RL_CMAES_ROOT']
+    command_to_run_sim = f"{path}/sim/main"
+
+    params = pd.read_csv(path + "/policy_params/" + trajectory_name + "_vals.csv")
+    gamma = params['gamma'].values[0]
+    alpha = params['alpha'].values[0]
+    r = params['r'].values[0]
+    s = params['s'].values[0]
+    d = params['d'].values[0]
+
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name], capture_output=True, text=True)
+
+    generate_animation(f'{path}/trajectories/{trajectory_name}.csv', path + f"/sim_results/train.csv", f'{path}/Analysis/animations/{trajectory_name}.gif')
+
+
 if __name__ == "__main__":
     plot_results_with_params("sine", "speed")
