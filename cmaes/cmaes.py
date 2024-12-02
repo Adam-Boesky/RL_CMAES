@@ -10,7 +10,8 @@ def norm(v):
     '''Computes the Euclidian norm of a vector.'''
     return np.sqrt(sum([x*x for x in v]))
 
-trajectories = ["poly"]
+trajectories = ["loop"]
+current_trajectory = trajectories[0]
 
 # Objective function
 def objective_function(x):
@@ -25,7 +26,6 @@ def objective_function(x):
     s = str(x[3])
     d = str(x[4])
 
-    current_trajectory = random.choice(trajectories)
     command_to_run_sim = "./sim/main"
 
     # 1. Run a trajectory with the sampled MVN in the CMA-ES
@@ -55,10 +55,5 @@ if __name__ == "__main__":
     print("Optimized solution:", result[0])
     print("Best value found:", result[1])
 
-
-
-
-
-# 1. color by speed to see where to improve policy
-# 2. improve the policy
-# 3. get a video going of a working policy
+    param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
+    pd.DataFrame([np.append(result[0], [result[1]])], columns=param_names, index=False).to_csv(f"./policy_params/{current_trajectory}.csv")
