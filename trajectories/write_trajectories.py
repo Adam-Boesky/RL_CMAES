@@ -79,7 +79,7 @@ class PolyTrajectory(Trajectory): # ChatGPT
         y = f(self.time_vector)
         x_rot = (np.sqrt(2) / 2) * (x - y)  # Rotated x
         y_rot = (np.sqrt(2) / 2) * (x + y)  # Rotated y
-        return [0.3 * x_rot, 0.3 * y_rot]
+        return [0.25 * x_rot, 0.25 * y_rot]
 
 def write_trajectories():
     trajectory_dirpath = os.environ['RL_CMAES_ROOT'] + '/trajectories'
