@@ -178,11 +178,15 @@ def generate_animation(trajectory_fname: str, result_fname: str, output_fname: s
     plt.close(fig)
 
 
-def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = 'speed'):
-    
+def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None):
+
+    # Create axis if not provided
+    if ax is None:
+        ax = plt.gca()
+
     path = os.environ['RL_CMAES_ROOT']
-    command_to_run_sim = "./sim/main"
-    
+    command_to_run_sim = f"{path}/sim/main"
+
     params = pd.read_csv(path + "/policy_params/" + trajectory_name + "_vals.csv")
     gamma = params['gamma'].values[0]
     alpha = params['alpha'].values[0]
@@ -192,10 +196,11 @@ def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = 'sp
 
     subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name], capture_output=True, text=True)
 
-    plot_result_and_trajectory(path + f"/trajectories/{trajectory_name}.csv", path + '/sim_results/train.csv', coloring=coloring)
+    ax = plot_result_and_trajectory(path + f"/trajectories/{trajectory_name}.csv", path + '/sim_results/train.csv', coloring=coloring, ax=ax)
     plt.grid(ls=':', lw=0.5)
 
-    plt.show()
+    return ax
+
 
 if __name__ == "__main__":
     plot_results_with_params("sine", "speed")
