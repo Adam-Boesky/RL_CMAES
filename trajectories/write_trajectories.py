@@ -5,6 +5,10 @@ import pandas as pd
 from typing import Tuple
 
 
+def f(x):
+    return x * (x - 100)**2 * (x - 40)**3 / 9e7
+
+
 class Trajectory():
     def __init__(self, trajectory_directory: str, t_final: Tuple[float], dt: float = 0.1):
         """Parent class for trajectories.
@@ -52,12 +56,14 @@ class ArcTrajectory(Trajectory):
 
         return (100 * np.sin(theta), 100 * np.cos(theta) - 100)
 
+
 class SineTrajectory(Trajectory):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def func(self):
         return [2 * self.time_vector, 10 * np.sin(self.time_vector * 2 * np.pi / 100)]
+
 
 class LoopTrajectory(Trajectory):
     def __init__(self, *args, **kwargs):
@@ -66,9 +72,6 @@ class LoopTrajectory(Trajectory):
     def func(self):
         return [30*np.cos(self.time_vector*2*np.pi/100) + self.time_vector*30*2*np.pi/400 - 30, 30*np.sin(self.time_vector*2*np.pi /100)]
 
-
-def f(x):
-    return x * (x - 100)**2 * (x - 40)**3 / 9e7
 
 class PolyTrajectory(Trajectory): # ChatGPT
     def __init__(self, *args, **kwargs):
