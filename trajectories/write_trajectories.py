@@ -81,6 +81,15 @@ class PolyTrajectory(Trajectory): # ChatGPT
         y_rot = (np.sqrt(2) / 2) * (x + y)  # Rotated y
         return [0.25 * x_rot, 0.25 * y_rot]
 
+class SawtoothTrajectory(Trajectory):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def func(self):
+        # Generate a sawtooth wave: y(t) ranges from -1 to 1 over the period
+        return [2 * self.time_vector, 10 * (self.time_vector / 50 % 1) ]
+
+
 def write_trajectories():
     trajectory_dirpath = os.environ['RL_CMAES_ROOT'] + '/trajectories'
 
@@ -104,6 +113,11 @@ def write_trajectories():
     # Write a polynomial trajectory
     poly_traj = PolyTrajectory(trajectory_dirpath, t_final = 100)
     poly_traj.write('poly.csv')
+
+    # Write a sawtooth trajctory
+    saw_traj = SawtoothTrajectory(trajectory_dirpath, t_final = 100)
+    saw_traj.write('sawtooth.csv')
+
 
 if __name__=='__main__':
     write_trajectories()
