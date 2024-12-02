@@ -81,6 +81,7 @@ class PolyTrajectory(Trajectory): # ChatGPT
         y_rot = (np.sqrt(2) / 2) * (x + y)  # Rotated y
         return [0.25 * x_rot, 0.25 * y_rot]
 
+
 class SawtoothTrajectory(Trajectory):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
