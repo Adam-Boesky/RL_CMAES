@@ -40,18 +40,22 @@ def plot_result(result_fname: str, ax: Optional[plt.Axes] = None, coloring: Opti
     if coloring == 'speed':
         color = np.sqrt(agent['velocity_x']**2 + agent['velocity_y']**2)
         cbar_label = "Speed"
+        cmap = 'plasma'
     elif coloring == 'acceleration':
         color = np.sqrt(agent['acceleration_x']**2 + agent['acceleration_y']**2)
         cbar_label = "Acceleration"
+        cmap = 'plasma'
     elif coloring == 'firing':
         color = agent['firing']
         cbar_label = 'Thruster Firing'
+        cmap = 'coolwarm'
     else:
         color = agent['time']
         cbar_label = "Time"
+        cmap = 'viridis'
 
     # Plot
-    scatter = ax.scatter(agent['x'], agent['y'], c=color, s=7.5, label='Agent', zorder=-10)
+    scatter = ax.scatter(agent['x'], agent['y'], c=color, s=7.5, label='Agent', zorder=-10, cmap=cmap)
     cbar = plt.colorbar(scatter, ax=ax)
     cbar.set_label(cbar_label)
 
@@ -178,7 +182,7 @@ def generate_animation(trajectory_fname: str, result_fname: str, output_fname: s
     plt.close(fig)
 
 
-def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None):
+def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None, vanilla: Optional[bool] = False):
 
     # Create axis if not provided
     if ax is None:
@@ -194,7 +198,40 @@ def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = Non
     s = params['s'].values[0]
     d = params['d'].values[0]
 
-    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name], capture_output=True, text=True)
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name, str(int(vanilla))], capture_output=True, text=True)
+
+    ax = plot_result_and_trajectory(path + f"/trajectories/{trajectory_name}.csv", path + '/sim_results/train.csv', coloring=coloring, ax=ax)
+    plt.grid(ls=':', lw=0.5)
+
+    return ax
+
+def plot_results_with_avg_params(trajectory_name: str, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None):
+
+    # Create axis if not provided
+    if ax is None:
+        ax = plt.gca()
+
+    path = os.environ['RL_CMAES_ROOT']
+    command_to_run_sim = f"{path}/sim/main"
+
+
+    traj_names = ['straight', 'arc', 'loop', 'poly', 'sawtooth', 'sine']
+    n = len(traj_names)
+    param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
+    param_vals = [0] * len(param_names)
+
+    for _, t_name in enumerate(traj_names):
+        vals = pd.read_csv(path + f"/policy_params/{t_name}_vals.csv")
+        for j, p_name in enumerate(param_names):
+            param_vals[j] += vals[p_name].values[0] / n
+    
+    gamma = param_vals[0]
+    alpha = param_vals[1]
+    r = param_vals[2]
+    s = param_vals[3]
+    d = param_vals[4]
+
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name, "0"], capture_output=True, text=True)
 
     ax = plot_result_and_trajectory(path + f"/trajectories/{trajectory_name}.csv", path + '/sim_results/train.csv', coloring=coloring, ax=ax)
     plt.grid(ls=':', lw=0.5)
