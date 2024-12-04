@@ -181,7 +181,7 @@ def generate_animation(trajectory_fname: str, result_fname: str, output_fname: s
     # Close the plot to prevent display
     plt.close(fig)
 
-
+# change this when bounded plotting
 def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None, vanilla: Optional[bool] = False):
 
     # Create axis if not provided
@@ -191,7 +191,7 @@ def plot_results_with_params(trajectory_name: str, coloring: Optional[str] = Non
     path = os.environ['RL_CMAES_ROOT']
     command_to_run_sim = f"{path}/sim/main"
 
-    params = pd.read_csv(path + "/policy_params/" + trajectory_name + "_vals.csv")
+    params = pd.read_csv(path + "/bounded_params/" + trajectory_name + "_vals.csv")
     gamma = params['gamma'].values[0]
     alpha = params['alpha'].values[0]
     r = params['r'].values[0]
@@ -221,7 +221,7 @@ def plot_results_with_avg_params(trajectory_name: str, coloring: Optional[str] =
     param_vals = [0] * len(param_names)
 
     for _, t_name in enumerate(traj_names):
-        vals = pd.read_csv(path + f"/policy_params/{t_name}_vals.csv")
+        vals = pd.read_csv(path + f"/bounded_params/{t_name}_vals.csv")
         for j, p_name in enumerate(param_names):
             param_vals[j] += vals[p_name].values[0] / n
     
@@ -239,18 +239,44 @@ def plot_results_with_avg_params(trajectory_name: str, coloring: Optional[str] =
     return ax
 
 
-def generate_animation_with_params(trajectory_name: str,):
+def plot_using_weights_from_x_on_traj_y(x, y, coloring: Optional[str] = None, ax: Optional[plt.Axes] = None):
+    # Create axis if not provided
+    if ax is None:
+        ax = plt.gca()
+
     path = os.environ['RL_CMAES_ROOT']
     command_to_run_sim = f"{path}/sim/main"
 
-    params = pd.read_csv(path + "/policy_params/" + trajectory_name + "_vals.csv")
+    # param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
+    params = pd.read_csv(path + f"/bounded_params/{x}_vals.csv")
+    
     gamma = params['gamma'].values[0]
     alpha = params['alpha'].values[0]
     r = params['r'].values[0]
     s = params['s'].values[0]
     d = params['d'].values[0]
 
-    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name], capture_output=True, text=True)
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), y, "0"], capture_output=True, text=True)
+
+    ax = plot_result_and_trajectory(path + f"/trajectories/{y}.csv", path + '/sim_results/train.csv', coloring=coloring, ax=ax)
+    plt.grid(ls=':', lw=0.5)
+
+    return ax
+
+
+
+def generate_animation_with_params(trajectory_name: str,):
+    path = os.environ['RL_CMAES_ROOT']
+    command_to_run_sim = f"{path}/sim/main"
+
+    params = pd.read_csv(path + "/bounded_params/" + trajectory_name + "_vals.csv")
+    gamma = params['gamma'].values[0]
+    alpha = params['alpha'].values[0]
+    r = params['r'].values[0]
+    s = params['s'].values[0]
+    d = params['d'].values[0]
+
+    subprocess.run([command_to_run_sim, str(gamma), str(alpha), str(r), str(s), str(d), trajectory_name, "0"], capture_output=True, text=True)
 
     generate_animation(f'{path}/trajectories/{trajectory_name}.csv', path + f"/sim_results/train.csv", f'{path}/Analysis/animations/{trajectory_name}.gif')
 

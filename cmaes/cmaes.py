@@ -10,11 +10,8 @@ def norm(v):
     '''Computes the Euclidian norm of a vector.'''
     return np.sqrt(sum([x*x for x in v]))
 
-trajectories = ["sawtooth"]
-current_trajectory = trajectories[0]
-
 # Objective function
-def objective_function(x):
+def objective_function(x, traj_name):
     '''
     ::params::
         x = [gamma_i, s_i, d_i]
@@ -29,11 +26,11 @@ def objective_function(x):
     command_to_run_sim = "./sim/main"
 
     # 1. Run a trajectory with the sampled MVN in the CMA-ES
-    subprocess.run([command_to_run_sim, gamma, alpha, r, s, d, current_trajectory], capture_output=True, text=True)
+    subprocess.run([command_to_run_sim, gamma, alpha, r, s, d, traj_name, "0"], capture_output=True, text=True)
 
     # 2. Read in the actual and target trajectory values generated during the previous run
     actual_trajectory = pd.read_csv("./sim_results/train.csv").iloc[:-1, :]
-    target_trajectory = pd.read_csv(f"./trajectories/{current_trajectory}.csv")
+    target_trajectory = pd.read_csv(f"./trajectories/{traj_name}.csv")
 
     # 3. Calculate and return the loss values
     actual_positions = [np.array([row['x'], row['y']]) for _, row in actual_trajectory.iterrows()]
@@ -45,15 +42,26 @@ def objective_function(x):
 
 
 if __name__ == "__main__":
-    initial_mean = [0,0,0,0,0]
-    sigma = 5
-    
-    es = cma.CMAEvolutionStrategy(initial_mean, sigma)
-    
-    es.optimize(objective_function)
-    result = es.result
-    print("Optimized solution:", result[0])
-    print("Best value found:", result[1])
 
-    param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
-    pd.DataFrame([np.append(result[0], [result[1]])], columns=param_names).to_csv(f"./policy_params/{current_trajectory}.csv", index=False)
+    traj_names = ['sine']#, 'straight', 'arc', 'loop', 'poly', 'sawtooth']
+    # traj_names = ['poly']
+
+    for i, t_name in enumerate(traj_names):
+    
+        initial_mean = [15,15,5,5,5]
+        sigma = 5
+
+        es = cma.CMAEvolutionStrategy(initial_mean, sigma, {'bounds':[0, np.inf], 'seed':207})
+        es.optimize(objective_function, args=[t_name])
+        
+        result = es.result
+        print("Best solution:", result[0])
+        print("Best value found:", result[1])
+
+        param_names = ["gamma", "alpha", "r", "s", "d", "min_loss"]
+        # best_soln = pd.DataFrame([np.append(result[0], [result[1]])], columns=param_names)
+        fav_soln = pd.DataFrame([np.append(result[5], [np.nan])], columns=param_names).to_csv(f"./bounded_params/{t_name}_vals.csv", index=False)
+        # df = pd.concat([best_soln, fav_soln], ignore_index=True)
+
+        
+        

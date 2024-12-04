@@ -14,12 +14,11 @@ double norm(const std::vector<double>& vec) {
     return sqrt(sum);
 }
 
-double dot_product(std::vector<double>& v1, std::vector<double>& v2) {
-    double dp = 0.0;
-    for (int i = 0; i < v1.size(); i++){
-        dp += v1[i] * v2[i];
+std::vector<double> scale_vec(double c, std::vector<double>& v) {
+    for (int i = 0; i < v.size(); i++){
+        v[i] *= c;
     }
-    return dp;
+    return v;
 }
 
 std::vector<double> sum_vec(std::vector<double>& v1, std::vector<double>& v2){
@@ -227,6 +226,7 @@ public:
 
             // Calculate the angle of a forward looking vector from the agent's position
             std::vector<double> traj_velo = trajectory.velocityAtT(time);
+            traj_velo = scale_vec(d, traj_velo);
             std::vector<double> vec_to_future = sum_vec(position_diff, traj_velo);
             double angle_to_future = atan2(vec_to_future[1], vec_to_future[0]);
 
@@ -238,8 +238,8 @@ public:
             double velo_diff_norm = norm(sub_vec(traj_velo, agent_velo));
             
             // Calculate the 'theta' and 'firing' values
-            theta = r * (pos_diff_angle - M_PI) + s * (traj_velo_angle - M_PI) + d * (angle_to_future - M_PI);
-            firing = alpha * velo_diff_norm + pos_diff_norm > abs(gamma);
+            theta = r * (pos_diff_angle - M_PI) + s * (traj_velo_angle - M_PI) + (angle_to_future - M_PI);
+            firing = alpha * velo_diff_norm + gamma * pos_diff_norm > 50.0;
         
         } else {
             auto traj_pos = trajectory.positionAtT(time);
