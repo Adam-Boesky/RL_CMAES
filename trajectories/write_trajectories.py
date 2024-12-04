@@ -62,7 +62,7 @@ class SineTrajectory(Trajectory):
         super().__init__(*args, **kwargs)
 
     def func(self):
-        return [2 * self.time_vector, 10 * np.sin(self.time_vector * 2 * np.pi / 100)]
+        return [0.6 * self.time_vector, 30 * np.sin(self.time_vector * 2 * np.pi / 100)]
 
 
 class LoopTrajectory(Trajectory):
@@ -91,7 +91,7 @@ class SawtoothTrajectory(Trajectory):
 
     def func(self):
         # Generate a sawtooth wave: y(t) ranges from -1 to 1 over the period
-        return [self.time_vector, 10 * abs(np.sin(2 * np.pi * self.time_vector / 100))]
+        return [self.time_vector * 0.6, 30 * abs(np.sin(2 * np.pi * self.time_vector / 100))]
 
 
 def write_trajectories():
